@@ -6,10 +6,10 @@ from copy import deepcopy
 
 class Agent(object):
 
-    def __init__(self, player, verbose = False):
+    def __init__(self, player, epsilon = 0.1, verbose = False):
         self.player = player
         self.verbose = verbose
-        self.epsilon = 0.1
+        self.epsilon = epsilon
         self.alpha = 0.95
         self.loose_reward = 0
 
