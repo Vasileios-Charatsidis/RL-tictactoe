@@ -2,6 +2,7 @@
 
 import random
 import numpy as np
+from copy import deepcopy
 
 
 EMPTY = 0
@@ -9,18 +10,18 @@ PLAYER_X = 1
 PLAYER_O = 2
 DRAW = 3
 
-BOARD_FORMAT = \
-"-------------\n" + \
-"| {0} | {1} | {2} |\n" + \
-"|-----------|\n" + \
-"| {3} | {4} | {5} |\n" + \
-"|-----------|\n" + \
-"| {6} | {7} | {8} |\n" + \
-"-------------"
-NAMES = [' ', 'X', 'O']
-
 
 class Board(object):
+
+    FORMATTER = \
+    "-------------\n" + \
+    "| {0} | {1} | {2} |\n" + \
+    "|-----------|\n" + \
+    "| {3} | {4} | {5} |\n" + \
+    "|-----------|\n" + \
+    "| {6} | {7} | {8} |\n" + \
+    "-------------"
+    NAMES = [' ', 'X', 'O']
 
     def __init__(self):
         self.state = np.array([EMPTY] * 9)
@@ -60,6 +61,12 @@ class Board(object):
 
         return DRAW
 
+    def __str__(self):
+        return Board.FORMATTER.format(*[Board.NAMES[s] for s in self.state])
+
+    def __len__(self):
+        return len(self.state)
+
 
 class Agent(object):
 
@@ -75,6 +82,8 @@ class Agent(object):
         self.prev_value = 0
 
     def action(self, board):
+        self.log('valid moves', board.get_valid())
+
         if random.random() > self.epsilon:
             # greedy action
             move, value = self.greedy(board)
@@ -83,7 +92,7 @@ class Agent(object):
             move, value = self.random(board)
 
         board.act(move, self.player)
-        self.prev_board = board
+        self.prev_board = deepcopy(board)
         self.prev_value = value
         return move
 
@@ -91,8 +100,6 @@ class Agent(object):
         max_value = -1
         max_move = None
 
-        print board.state.reshape((3,3))
-        print board.get_valid()
         for move in board.get_valid():
             board.act(move, self.player)
             value = self.lookup(board)
@@ -129,44 +136,47 @@ class Agent(object):
 
     def backup(self, next_value):
         if self.prev_board != None:
-            prev_state = tuple(board.state)
-            self.values[prev_state] += self.alpha * (next_value - self.prev_value)
+            prev_state = tuple(self.prev_board.state)
+            delta = self.alpha * (next_value - self.prev_value)
+            self.log('backing up', prev_state, 'by', delta)
+            self.values[prev_state] += delta
 
-    def random(self, state):
+    def random(self, board):
         move = random.choice(board.get_valid())
         board.act(move, self.player)
-        value = self.lookup(state)
+        value = self.lookup(board)
         return move, value
 
-    def log(self, what):
+    def log(self, *what):
         if self.verbose:
-            print 'Player %d: %s' % (self.player, what)
+            s = 'Player ' + str(self.player) + ':'
+            print s, ' '.join(map(str, list(what)))
 
 
-def play(agent1, agent2):
+def play(agent1, agent2, modulo = 1):
+    board = Board()
+
     for i in range(9):
-        if i % 2 == 0:
-            move = agent1.action(board)
-            agent1.log('played ' + str(move))
-            board.act(move, agent1.player)
-        else:
-            move = agent2.action(board)
-            agent2.log('played ' + str(move))
-            board.act(move, agent2.player)
+        agent = agent1 if i % 2 == 0 else agent2
+        
+        move = agent.action(board)
+        board.act(move, agent.player)
+
+        if modulo != None and i % modulo == 0:
+            print '\nBoard', i, '\n', board, '\n'
 
         game_state = board.game_state()
         if game_state != EMPTY:
             break
 
-    return game_state
+    return game_state, board
 
 
 if __name__ == '__main__':
     
-    board = Board()
-    agent1 = Agent(PLAYER_X, verbose = True)
-    agent2 = Agent(PLAYER_O, verbose = True)
+    agent1 = Agent(PLAYER_X)
+    agent2 = Agent(PLAYER_O)
 
     for run in range(10):
-        game_state = play(agent1, agent2)
-        print 'Game %d ended %d' % run, game_state
+        game_state, board = play(agent1, agent2, modulo = None)
+        print 'Game %d ended %d\n%s' % (run, game_state, board)
