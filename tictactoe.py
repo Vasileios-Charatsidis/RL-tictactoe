@@ -2,6 +2,7 @@
 
 from board import Board
 from agent import Agent
+from human import Human
 
 import sys
 import getopt
@@ -54,9 +55,18 @@ def run_learning(agent1, agent2, trials, step, title, modulo, show_boards):
 
     return raw_results, aggregated_results
 
+def play_against_human():
+    agent1 = Agent(Board.PLAYER_X)
+    agent2 = Agent(Board.PLAYER_O)
+    run_games(agent1, agent2, 100, None, False)
+
+    human = Human(Board.PLAYER_O)
+    Board.play(agent1, human, None, [False, True])
+
 def menu():
     print '1 - Learning vs. Random'
     print '2 - Learning vs. Learning'
+    print '3 - Play against agent'
     print 'q - Exit'
     opt = raw_input('Choice: ')
 
@@ -70,6 +80,8 @@ def menu():
         agent1 = Agent(Board.PLAYER_X, verbose = verbose)
         agent2 = Agent(Board.PLAYER_O, verbose = verbose)
         raw_results, aggregated_results = run_learning(agent1, agent2, trials, step, 'Learning vs Learning', modulo, show_boards)
+    elif opt is '3':
+        play_against_human()
 
     if opt is not 'q':
         menu()

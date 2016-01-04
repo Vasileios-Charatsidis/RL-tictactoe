@@ -21,7 +21,9 @@ class Board(object):
     def __init__(self):
         self.state = np.array([Board.EMPTY] * 9)
 
-    def act(self, move, player):
+    def act(self, move, player, check_valid = False):
+        if check_valid and move not in self.get_valid():
+            raise Exception('Invalid move!')
         self.state[move] = player
 
     def get_valid(self):
@@ -63,14 +65,20 @@ class Board(object):
         return len(self.state)
 
     @staticmethod
-    def play(agent1, agent2, modulo = 1):
+    def play(agent1, agent2, modulo = 1, check_valid = [False, False]):
         board = Board()
 
         for i in range(9):
             agent = agent1 if i % 2 == 0 else agent2
             
-            move = agent.action(board)
-            board.act(move, agent.player)
+            correct_action = False
+            while not correct_action:
+                try:
+                    move = agent.action(board)
+                    board.act(move, agent.player, check_valid[i % 2])
+                    correct_action = True
+                except Exception as e:
+                    print e
 
             if modulo != None and i % modulo == 0:
                 print '\nBoard', i, '\n', board, '\n'
